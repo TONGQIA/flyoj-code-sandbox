@@ -3,6 +3,8 @@ package com.tong.flyojcodesandbox;
 import com.tong.flyojcodesandbox.model.ExecuteCodeRequest;
 import com.tong.flyojcodesandbox.model.ExecuteCodeResponse;
 
+import java.io.IOException;
+
 /**
  * 代码沙箱接口
  *
@@ -15,6 +17,6 @@ public interface CodeSandbox {
      * @param executeCodeRequest
      * @return
      */
-    ExecuteCodeResponse executeCode(ExecuteCodeRequest executeCodeRequest);
+    ExecuteCodeResponse executeCode(ExecuteCodeRequest executeCodeRequest) throws IOException;
 
 }

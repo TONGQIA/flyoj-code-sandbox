@@ -2,6 +2,8 @@ package com.tong.flyojcodesandbox.model;
 
 import lombok.Data;
 
+import java.util.List;
+
 /**
  * 进程执行信息
  */
@@ -15,4 +17,7 @@ public class ExecuteMassage {
 
     // 错误信息
     private String errorMessage;
+
+    // 消耗时间
+    private long time;
 }
