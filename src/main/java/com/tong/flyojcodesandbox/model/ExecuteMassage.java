@@ -20,4 +20,7 @@ public class ExecuteMassage {
 
     // 消耗时间
     private long time;
+
+    // 内存占用
+    private long memory;
 }

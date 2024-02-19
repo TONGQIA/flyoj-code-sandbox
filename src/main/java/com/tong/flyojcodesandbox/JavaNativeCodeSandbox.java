@@ -68,7 +68,8 @@ public class JavaNativeCodeSandbox implements CodeSandbox {
         // 3. 运行（权限、资源等安全问题）
         List<ExecuteMassage> executeMassagesList = new ArrayList<>();
         for (String inputArgs : inputList) {
-            String runCmd = String.format("java -Dfile.encoding=UTF-8 -cp %s Main %s", userCodeParentPath, inputArgs);
+            // 运行时需要限制内存
+            String runCmd = String.format("java -Xmx256m -Dfile.encoding=UTF-8 -cp %s Main %s", userCodeParentPath, inputArgs);
             try {
                 Process process = Runtime.getRuntime().exec(runCmd);
                 ExecuteMassage executeMassage = ProcessUtils.runProcessAndGetMessage(process, "运行");
