@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 public class JavaDockerCodeSandbox implements CodeSandbox {
 
@@ -115,12 +116,15 @@ public class JavaDockerCodeSandbox implements CodeSandbox {
         // 容器挂载目录
         hostConfig.setBinds(new Bind(userCodeParentPath, new Volume("/app")));
         // 容器限制内存和CPU
+        hostConfig.withMemorySwap(0L);//禁用容器的swap空间
         hostConfig.withMemory(100 * 1000 * 1000L);
         hostConfig.withCpuCount(1L);
+        hostConfig.withReadonlyRootfs(true);// 权限管理 限制用户不能向root根目录写文件
 
         CreateContainerCmd containerCmd = dockerClient.createContainerCmd(image);
         CreateContainerResponse createContainerResponse = containerCmd
                 .withHostConfig(hostConfig)
+                .withNetworkDisabled(true)// 关闭网络配置
                 .withAttachStdin(true)
                 .withAttachStderr(true)
                 .withAttachStdout(true)
@@ -150,9 +154,17 @@ public class JavaDockerCodeSandbox implements CodeSandbox {
 
             final String[] massage = {null};
             final String[] errorMassage = {null};
-            long time = 0;
+            long time = 0L;
+            final boolean[] timeout = {true};
             // 创建回调
             ExecStartResultCallback execStartResultCallback = new ExecStartResultCallback(){
+                @Override
+                public void onComplete() {
+                    // 如果执行完成，就没超时
+                    timeout[0] = false;
+                    super.onComplete();
+                }
+
                 @Override
                 public void onNext(Frame frame) {
                     StreamType streamType = frame.getStreamType();
@@ -165,6 +177,7 @@ public class JavaDockerCodeSandbox implements CodeSandbox {
                     }
                     super.onNext(frame);
                 }
+
             };
 
             // 获取占用的内存
@@ -203,7 +216,7 @@ public class JavaDockerCodeSandbox implements CodeSandbox {
                 stopWatch.start();
                 dockerClient.execStartCmd(execCreateCmdResponse.getId())
                         .exec(execStartResultCallback)
-                        .awaitCompletion();
+                        .awaitCompletion(TIME_OUT, TimeUnit.MILLISECONDS);
                 stopWatch.stop();
                 time =Math.max(stopWatch.getLastTaskTimeMillis(), time);
                 statsCmd.close();
@@ -215,6 +228,9 @@ public class JavaDockerCodeSandbox implements CodeSandbox {
                 executeMassagesList.add(executeMassage);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
+            }
+            if (timeout[0]){
+                break;// 如果超时，退出
             }
         }
 
