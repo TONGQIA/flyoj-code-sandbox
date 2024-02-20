@@ -49,27 +49,12 @@ public class JavaDockerCodeSandbox implements CodeSandbox {
     @Override
     public ExecuteCodeResponse executeCode(ExecuteCodeRequest executeCodeRequest) {
 
-        // 1. 保存文件
-        List<String> inputList = executeCodeRequest.getInputList();
-        String code = executeCodeRequest.getCode();
-        String language = executeCodeRequest.getLanguage();
 
-        // 1.1 新增目录
-        // 路径
-        String userDir = System.getProperty("user.dir");
-        String globalCodePathName = userDir + File.separator + GLOBAL_CODE_DIR_NAME;
+        saveFile result = getSaveFile(executeCodeRequest);
 
-        if (!FileUtil.exist(globalCodePathName)) {
-            FileUtil.mkdir(globalCodePathName);
-        }
-        // 1.2 将每个用户的代码都存放在独立目录下，通过UUID随机生成目录名，便于隔离和维护
-        String userCodeParentPath = globalCodePathName + File.separator + UUID.randomUUID();
-        String userCodePath = userCodeParentPath + File.separator + GLOBAL_JAVA_CLASS_NAME;
-        File userCodeFile = FileUtil.writeString(code, userCodePath, StandardCharsets.UTF_8);
-        //
 
         // 2. 编译
-        String compileCmd = String.format("javac -encoding utf-8 %s", userCodeFile.getAbsolutePath());
+        String compileCmd = String.format("javac -encoding utf-8 %s", result.userCodeFile.getAbsolutePath());
         // 后面需要用到进程的结果，所以要获得进程
         try {
             Process process = Runtime.getRuntime().exec(compileCmd);
@@ -114,7 +99,7 @@ public class JavaDockerCodeSandbox implements CodeSandbox {
 
         HostConfig hostConfig = new HostConfig();
         // 容器挂载目录
-        hostConfig.setBinds(new Bind(userCodeParentPath, new Volume("/app")));
+        hostConfig.setBinds(new Bind(result.userCodeParentPath, new Volume("/app")));
         // 容器限制内存和CPU
         hostConfig.withMemorySwap(0L);//禁用容器的swap空间
         hostConfig.withMemory(100 * 1000 * 1000L);
@@ -140,7 +125,7 @@ public class JavaDockerCodeSandbox implements CodeSandbox {
         List<ExecuteMassage> executeMassagesList = new ArrayList<>();
 
         // docker exec condescending_moser java -cp /app Main 1 3
-        for (String inputArgs : inputList) {
+        for (String inputArgs : result.inputList) {
             StopWatch stopWatch = new StopWatch();
             String[] inputArgsArray = inputArgs.split(" ");
             String[] cmdArray = ArrayUtil.append(new String[]{"java", "-cp", "/app", "Main"}, inputArgsArray);
@@ -246,6 +231,40 @@ public class JavaDockerCodeSandbox implements CodeSandbox {
 
 
         return executeCodeResponse;
+    }
+
+    private static saveFile getSaveFile(ExecuteCodeRequest executeCodeRequest) {
+        // 1. 保存文件
+        List<String> inputList = executeCodeRequest.getInputList();
+        String code = executeCodeRequest.getCode();
+        String language = executeCodeRequest.getLanguage();
+
+        // 1.1 新增目录
+        // 路径
+        String userDir = System.getProperty("user.dir");
+        String globalCodePathName = userDir + File.separator + GLOBAL_CODE_DIR_NAME;
+
+        if (!FileUtil.exist(globalCodePathName)) {
+            FileUtil.mkdir(globalCodePathName);
+        }
+        // 1.2 将每个用户的代码都存放在独立目录下，通过UUID随机生成目录名，便于隔离和维护
+        String userCodeParentPath = globalCodePathName + File.separator + UUID.randomUUID();
+        String userCodePath = userCodeParentPath + File.separator + GLOBAL_JAVA_CLASS_NAME;
+        File userCodeFile = FileUtil.writeString(code, userCodePath, StandardCharsets.UTF_8);
+        saveFile result = new saveFile(inputList, userCodeParentPath, userCodeFile);
+        return result;
+    }
+
+    private static class saveFile {
+        public final List<String> inputList;
+        public final String userCodeParentPath;
+        public final File userCodeFile;
+
+        public saveFile(List<String> inputList, String userCodeParentPath, File userCodeFile) {
+            this.inputList = inputList;
+            this.userCodeParentPath = userCodeParentPath;
+            this.userCodeFile = userCodeFile;
+        }
     }
 
     /**
