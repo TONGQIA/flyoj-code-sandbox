@@ -15,7 +15,6 @@ import com.tong.flyojcodesandbox.model.ExecuteCodeResponse;
 import com.tong.flyojcodesandbox.model.ExecuteMassage;
 import com.tong.flyojcodesandbox.model.JudgeInfo;
 import com.tong.flyojcodesandbox.utils.ProcessUtils;
-import jdk.nashorn.internal.ir.CallNode;
 
 import java.io.Closeable;
 import java.io.File;
@@ -27,7 +26,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-public class JavaDockerCodeSandbox extends JavaCodeSandboxTemplate {
+public class JavaDockerCodeSandboxOld implements CodeSandbox {
 
     public static final String GLOBAL_CODE_DIR_NAME = "tmpCode";
     public static final String GLOBAL_JAVA_CLASS_NAME = "Main.java";
@@ -35,7 +34,7 @@ public class JavaDockerCodeSandbox extends JavaCodeSandboxTemplate {
     public static boolean FIRST_INIT = true;
 
     public static void main(String[] args) {
-        JavaDockerCodeSandbox javaNativeCodeSandbox = new JavaDockerCodeSandbox();
+        JavaDockerCodeSandboxOld javaNativeCodeSandbox = new JavaDockerCodeSandboxOld();
         ExecuteCodeRequest executeCodeRequest = new ExecuteCodeRequest();
         executeCodeRequest.setInputList(Arrays.asList("1 2", "1 3"));
         String code = ResourceUtil.readUtf8Str("testCode" + File.separator + "simpleComputeArgs" + File.separator + "Main.java");
@@ -48,11 +47,22 @@ public class JavaDockerCodeSandbox extends JavaCodeSandboxTemplate {
 
     @Override
     public ExecuteCodeResponse executeCode(ExecuteCodeRequest executeCodeRequest) {
-        return super.executeCode(executeCodeRequest);
-    }
 
-    @Override
-    public List<ExecuteMassage> runFile(List<String> inputList, File userCodeFile){
+
+        saveFile result = getSaveFile(executeCodeRequest);
+
+
+        // 2. 编译
+        String compileCmd = String.format("javac -encoding utf-8 %s", result.userCodeFile.getAbsolutePath());
+        // 后面需要用到进程的结果，所以要获得进程
+        try {
+            Process process = Runtime.getRuntime().exec(compileCmd);
+            ExecuteMassage executeMassage = ProcessUtils.runProcessAndGetMessage(process, "编译");
+            System.out.println(executeMassage);
+        } catch (IOException e) {
+            return getErrorResponse(e);
+        }
+
         // 3. 创建容器，把文件复制到容器内
         // 获取默认的Docker Client
         DockerClient dockerClient = DockerClientBuilder.getInstance().build();
@@ -88,7 +98,7 @@ public class JavaDockerCodeSandbox extends JavaCodeSandboxTemplate {
 
         HostConfig hostConfig = new HostConfig();
         // 容器挂载目录
-        hostConfig.setBinds(new Bind(userCodeFile.getParentFile().getAbsolutePath(), new Volume("/app")));
+        hostConfig.setBinds(new Bind(result.userCodeParentPath, new Volume("/app")));
         // 容器限制内存和CPU
         hostConfig.withMemorySwap(0L);//禁用容器的swap空间
         hostConfig.withMemory(100 * 1000 * 1000L);
@@ -114,7 +124,7 @@ public class JavaDockerCodeSandbox extends JavaCodeSandboxTemplate {
         List<ExecuteMassage> executeMassagesList = new ArrayList<>();
 
         // docker exec condescending_moser java -cp /app Main 1 3
-        for (String inputArgs : inputList) {
+        for (String inputArgs : result.inputList) {
             StopWatch stopWatch = new StopWatch();
             String[] inputArgsArray = inputArgs.split(" ");
             String[] cmdArray = ArrayUtil.append(new String[]{"java", "-cp", "/app", "Main"}, inputArgsArray);
@@ -128,7 +138,6 @@ public class JavaDockerCodeSandbox extends JavaCodeSandboxTemplate {
 
             final String[] massage = {null};
             final String[] errorMassage = {null};
-            final Integer[] status = {0};
             long time = 0L;
             final boolean[] timeout = {true};
             // 创建回调
@@ -144,7 +153,6 @@ public class JavaDockerCodeSandbox extends JavaCodeSandboxTemplate {
                 public void onNext(Frame frame) {
                     StreamType streamType = frame.getStreamType();
                     if (StreamType.STDERR.equals(streamType)){
-                        status[0] = 3;
                         errorMassage[0] = new String(frame.getPayload());
                         System.out.println("输出错误结果：" + errorMassage[0]);
                     } else {
@@ -197,9 +205,9 @@ public class JavaDockerCodeSandbox extends JavaCodeSandboxTemplate {
                 time =Math.max(stopWatch.getLastTaskTimeMillis(), time);
                 statsCmd.close();
                 executeMassage.setTime(time);
-                executeMassage.setCode(status[0]);
                 executeMassage.setMessage(massage[0]);
                 executeMassage.setErrorMessage(errorMassage[0]);
+                executeMassagesList.add(executeMassage);
                 executeMassage.setMemory(maxMemory[0]);
                 executeMassagesList.add(executeMassage);
             } catch (InterruptedException e) {
@@ -209,10 +217,54 @@ public class JavaDockerCodeSandbox extends JavaCodeSandboxTemplate {
                 break;// 如果超时，退出
             }
         }
-        return executeMassagesList;
+
+        // 5. 收集整理并且输出结果
+        // 收集并整理返回信息
+        ExecuteCodeResponse executeCodeResponse = new ExecuteCodeResponse();
+        executeCodeResponse.setStatus(1);
+        JudgeInfo judgeInfo = new JudgeInfo();
+
+        // 6. 文件清理，释放空间
+
+        // 7. 错误处理
+
+
+        return executeCodeResponse;
     }
 
+    private static saveFile getSaveFile(ExecuteCodeRequest executeCodeRequest) {
+        // 1. 保存文件
+        List<String> inputList = executeCodeRequest.getInputList();
+        String code = executeCodeRequest.getCode();
+        String language = executeCodeRequest.getLanguage();
 
+        // 1.1 新增目录
+        // 路径
+        String userDir = System.getProperty("user.dir");
+        String globalCodePathName = userDir + File.separator + GLOBAL_CODE_DIR_NAME;
+
+        if (!FileUtil.exist(globalCodePathName)) {
+            FileUtil.mkdir(globalCodePathName);
+        }
+        // 1.2 将每个用户的代码都存放在独立目录下，通过UUID随机生成目录名，便于隔离和维护
+        String userCodeParentPath = globalCodePathName + File.separator + UUID.randomUUID();
+        String userCodePath = userCodeParentPath + File.separator + GLOBAL_JAVA_CLASS_NAME;
+        File userCodeFile = FileUtil.writeString(code, userCodePath, StandardCharsets.UTF_8);
+        saveFile result = new saveFile(inputList, userCodeParentPath, userCodeFile);
+        return result;
+    }
+
+    private static class saveFile {
+        public final List<String> inputList;
+        public final String userCodeParentPath;
+        public final File userCodeFile;
+
+        public saveFile(List<String> inputList, String userCodeParentPath, File userCodeFile) {
+            this.inputList = inputList;
+            this.userCodeParentPath = userCodeParentPath;
+            this.userCodeFile = userCodeFile;
+        }
+    }
 
     /**
      * 获取错误响应
