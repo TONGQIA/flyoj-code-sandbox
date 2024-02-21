@@ -7,6 +7,7 @@ import com.tong.flyojcodesandbox.model.ExecuteCodeResponse;
 import com.tong.flyojcodesandbox.model.ExecuteMassage;
 import com.tong.flyojcodesandbox.model.JudgeInfo;
 import com.tong.flyojcodesandbox.utils.ProcessUtils;
+import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,6 +15,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Component
 public class JavaNativeCodeSandbox extends JavaCodeSandboxTemplate {
 
     public static void main(String[] args) {
