@@ -16,6 +16,7 @@ import com.tong.flyojcodesandbox.model.ExecuteMassage;
 import com.tong.flyojcodesandbox.model.JudgeInfo;
 import com.tong.flyojcodesandbox.utils.ProcessUtils;
 import jdk.nashorn.internal.ir.CallNode;
+import org.springframework.stereotype.Component;
 
 import java.io.Closeable;
 import java.io.File;
@@ -27,6 +28,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+@Component
 public class JavaDockerCodeSandbox extends JavaCodeSandboxTemplate {
 
     public static final String GLOBAL_CODE_DIR_NAME = "tmpCode";
@@ -198,7 +200,7 @@ public class JavaDockerCodeSandbox extends JavaCodeSandboxTemplate {
                 statsCmd.close();
                 executeMassage.setTime(time);
                 executeMassage.setCode(status[0]);
-                executeMassage.setMessage(massage[0]);
+                executeMassage.setMessage(massage[0].trim());
                 executeMassage.setErrorMessage(errorMassage[0]);
                 executeMassage.setMemory(maxMemory[0]);
                 executeMassagesList.add(executeMassage);
