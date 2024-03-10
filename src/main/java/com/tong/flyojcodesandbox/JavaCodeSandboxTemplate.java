@@ -124,7 +124,7 @@ public class JavaCodeSandboxTemplate implements CodeSandbox {
      */
     public ExecuteCodeResponse getExecuteCodeResponse(List<ExecuteMassage> executeMassagesList) {
         ExecuteCodeResponse executeCodeResponse = new ExecuteCodeResponse();
-        executeCodeResponse.setStatus(1);
+        executeCodeResponse.setJudgeStatus(1);
         List<String> outputList = new ArrayList<>();
         long maxTime = 0;
         long maxMemory = 0L;
@@ -137,7 +137,7 @@ public class JavaCodeSandboxTemplate implements CodeSandbox {
                 //outputList = executeMassagesList.stream().map(ExecuteMassage::getErrorMessage).collect(Collectors.toList());
                 outputList.add(executeMassage.getErrorMessage());
                 // TODO 创建枚举值
-                executeCodeResponse.setStatus(3);
+                executeCodeResponse.setJudgeStatus(3);
                 // TODO 优化
                 executeCodeResponse.setMessage(executeMassage.getErrorMessage());
             }
@@ -184,7 +184,7 @@ public class JavaCodeSandboxTemplate implements CodeSandbox {
         executeCodeResponse.setOutputList(new ArrayList<>());
         executeCodeResponse.setMessage(e.getMessage());
         // TODO 枚举
-        executeCodeResponse.setStatus(2);
+        executeCodeResponse.setJudgeStatus(2);
         executeCodeResponse.setJudgeInfo(new JudgeInfo());
         return executeCodeResponse;
     }

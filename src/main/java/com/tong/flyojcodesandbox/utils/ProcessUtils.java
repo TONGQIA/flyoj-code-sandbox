@@ -4,6 +4,7 @@ import com.tong.flyojcodesandbox.model.ExecuteMassage;
 import org.springframework.util.StopWatch;
 
 import java.io.*;
+import java.util.concurrent.TimeUnit;
 
 public class ProcessUtils {
     /**
@@ -119,7 +120,7 @@ public class ProcessUtils {
             }
             inputStream.close();
             outputStream.close();
-
+            process.destroy();
         } catch (Exception e) {
             e.printStackTrace();
         }

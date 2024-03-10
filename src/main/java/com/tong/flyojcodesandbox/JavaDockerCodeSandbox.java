@@ -37,13 +37,13 @@ public class JavaDockerCodeSandbox extends JavaCodeSandboxTemplate {
     public static boolean FIRST_INIT = true;
 
     public static void main(String[] args) {
-        JavaDockerCodeSandbox javaNativeCodeSandbox = new JavaDockerCodeSandbox();
+        JavaDockerCodeSandbox javaDockerCodeSandbox = new JavaDockerCodeSandbox();
         ExecuteCodeRequest executeCodeRequest = new ExecuteCodeRequest();
         executeCodeRequest.setInputList(Arrays.asList("1 2", "1 3"));
         String code = ResourceUtil.readUtf8Str("testCode" + File.separator + "simpleComputeArgs" + File.separator + "Main.java");
         executeCodeRequest.setCode(code);
         executeCodeRequest.setLanguage("java");
-        ExecuteCodeResponse executeCodeResponse = javaNativeCodeSandbox.executeCode(executeCodeRequest);
+        ExecuteCodeResponse executeCodeResponse = javaDockerCodeSandbox.executeCode(executeCodeRequest);
         System.out.println(executeCodeResponse);
 
     }
@@ -130,7 +130,7 @@ public class JavaDockerCodeSandbox extends JavaCodeSandboxTemplate {
 
             final String[] massage = {null};
             final String[] errorMassage = {null};
-            final Integer[] status = {0};
+            final Integer[] judgeStatus = {0};
             long time = 0L;
             final boolean[] timeout = {true};
             // 创建回调
@@ -146,7 +146,7 @@ public class JavaDockerCodeSandbox extends JavaCodeSandboxTemplate {
                 public void onNext(Frame frame) {
                     StreamType streamType = frame.getStreamType();
                     if (StreamType.STDERR.equals(streamType)){
-                        status[0] = 3;
+                        judgeStatus[0] = 3;
                         errorMassage[0] = new String(frame.getPayload());
                         System.out.println("输出错误结果：" + errorMassage[0]);
                     } else {
@@ -199,7 +199,7 @@ public class JavaDockerCodeSandbox extends JavaCodeSandboxTemplate {
                 time =Math.max(stopWatch.getLastTaskTimeMillis(), time);
                 statsCmd.close();
                 executeMassage.setTime(time);
-                executeMassage.setCode(status[0]);
+                executeMassage.setCode(judgeStatus[0]);
                 executeMassage.setMessage(massage[0].trim());
                 executeMassage.setErrorMessage(errorMassage[0]);
                 executeMassage.setMemory(maxMemory[0]);
@@ -227,7 +227,7 @@ public class JavaDockerCodeSandbox extends JavaCodeSandboxTemplate {
         executeCodeResponse.setOutputList(new ArrayList<>());
         executeCodeResponse.setMessage(e.getMessage());
         // TODO 枚举
-        executeCodeResponse.setStatus(2);
+        executeCodeResponse.setJudgeStatus(2);
         executeCodeResponse.setJudgeInfo(new JudgeInfo());
         return executeCodeResponse;
     }

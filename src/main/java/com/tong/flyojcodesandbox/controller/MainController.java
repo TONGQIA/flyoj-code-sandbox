@@ -45,7 +45,7 @@ public class MainController {
         // 2. 判空
         if (executeCodeRequest == null){
             ExecuteCodeResponse executeCodeResponse = new ExecuteCodeResponse();
-            executeCodeResponse.setStatus(2);
+            executeCodeResponse.setJudgeStatus(2);
             executeCodeResponse.setMessage("请求参数为空");
             return executeCodeResponse;
         }

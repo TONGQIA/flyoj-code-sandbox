@@ -221,7 +221,7 @@ public class JavaDockerCodeSandboxOld implements CodeSandbox {
         // 5. 收集整理并且输出结果
         // 收集并整理返回信息
         ExecuteCodeResponse executeCodeResponse = new ExecuteCodeResponse();
-        executeCodeResponse.setStatus(1);
+        executeCodeResponse.setJudgeStatus(1);
         JudgeInfo judgeInfo = new JudgeInfo();
 
         // 6. 文件清理，释放空间
@@ -277,7 +277,7 @@ public class JavaDockerCodeSandboxOld implements CodeSandbox {
         executeCodeResponse.setOutputList(new ArrayList<>());
         executeCodeResponse.setMessage(e.getMessage());
         // TODO 枚举
-        executeCodeResponse.setStatus(2);
+        executeCodeResponse.setJudgeStatus(2);
         executeCodeResponse.setJudgeInfo(new JudgeInfo());
         return executeCodeResponse;
     }
