@@ -1,7 +1,6 @@
 package com.tong.flyojcodesandbox;
 
 import cn.hutool.core.date.StopWatch;
-import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.util.ArrayUtil;
 import com.github.dockerjava.api.DockerClient;
@@ -14,18 +13,14 @@ import com.tong.flyojcodesandbox.model.ExecuteCodeRequest;
 import com.tong.flyojcodesandbox.model.ExecuteCodeResponse;
 import com.tong.flyojcodesandbox.model.ExecuteMassage;
 import com.tong.flyojcodesandbox.model.JudgeInfo;
-import com.tong.flyojcodesandbox.utils.ProcessUtils;
-import jdk.nashorn.internal.ir.CallNode;
 import org.springframework.stereotype.Component;
 
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Component
@@ -227,7 +222,7 @@ public class JavaDockerCodeSandbox extends JavaCodeSandboxTemplate {
         executeCodeResponse.setOutputList(new ArrayList<>());
         executeCodeResponse.setMessage(e.getMessage());
         // TODO 枚举
-        executeCodeResponse.setJudgeStatus(2);
+        executeCodeResponse.setExecuteStatus(2);
         executeCodeResponse.setJudgeInfo(new JudgeInfo());
         return executeCodeResponse;
     }

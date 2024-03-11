@@ -1,7 +1,7 @@
 package com.tong.flyojcodesandbox.controller;
 
-import cn.hutool.http.server.HttpServerRequest;
 import com.tong.flyojcodesandbox.JavaNativeCodeSandbox;
+import com.tong.flyojcodesandbox.common.ExecuteStatusEnum;
 import com.tong.flyojcodesandbox.model.ExecuteCodeRequest;
 import com.tong.flyojcodesandbox.model.ExecuteCodeResponse;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -45,7 +45,7 @@ public class MainController {
         // 2. 判空
         if (executeCodeRequest == null){
             ExecuteCodeResponse executeCodeResponse = new ExecuteCodeResponse();
-            executeCodeResponse.setJudgeStatus(2);
+            executeCodeResponse.setExecuteStatus(ExecuteStatusEnum.PARAMS_ERROR.getCode());
             executeCodeResponse.setMessage("请求参数为空");
             return executeCodeResponse;
         }

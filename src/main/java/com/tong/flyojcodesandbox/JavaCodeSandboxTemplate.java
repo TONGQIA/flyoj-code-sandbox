@@ -2,6 +2,7 @@ package com.tong.flyojcodesandbox;
 
 import cn.hutool.core.io.FileUtil;
 
+import com.tong.flyojcodesandbox.common.ExecuteStatusEnum;
 import com.tong.flyojcodesandbox.model.ExecuteCodeRequest;
 import com.tong.flyojcodesandbox.model.ExecuteCodeResponse;
 import com.tong.flyojcodesandbox.model.ExecuteMassage;
@@ -24,6 +25,7 @@ public class JavaCodeSandboxTemplate implements CodeSandbox {
     @Override
     public ExecuteCodeResponse executeCode(ExecuteCodeRequest executeCodeRequest) {
 
+        ExecuteCodeResponse executeCodeResponse = null;
 
         List<String> inputList = executeCodeRequest.getInputList();
         String code = executeCodeRequest.getCode();
@@ -33,15 +35,21 @@ public class JavaCodeSandboxTemplate implements CodeSandbox {
 
         // 2. 编译
         ExecuteMassage compileFileExecuteMassage = compileFile(userCodeFile);
-        System.out.println(compileFileExecuteMassage);
 
-        // TODO 这里循环运行？是否可以优化
-        // 3. 运行（权限、资源等安全问题）
-        List<ExecuteMassage> executeMassagesList = runFile(inputList, userCodeFile);
-
-
-        // 4. 收集并整理返回信息
-        ExecuteCodeResponse executeCodeResponse = getExecuteCodeResponse(executeMassagesList);
+        // 编译成功才运行
+        if (compileFileExecuteMassage.getCode().equals(0)){
+            // TODO 这里循环运行？是否可以优化
+            // 3. 运行（权限、资源等安全问题）
+            List<ExecuteMassage>  executeMassagesList = runFile(inputList, userCodeFile);
+            // 4. 收集并整理返回信息
+            executeCodeResponse = getExecuteCodeResponse(executeMassagesList);
+        }else {
+            // 编译失败
+            List<ExecuteMassage>  executeMassagesList  = new ArrayList<>();
+            executeMassagesList.add(compileFileExecuteMassage);
+            // 4. 收集并整理返回信息
+            executeCodeResponse = getExecuteCodeResponse(executeMassagesList);
+        }
 
         // 5. 文件清理
         boolean del = extracted(userCodeFile);
@@ -84,7 +92,8 @@ public class JavaCodeSandboxTemplate implements CodeSandbox {
             Process process = Runtime.getRuntime().exec(compileCmd);
             ExecuteMassage executeMassage = ProcessUtils.runProcessAndGetMessage(process, "编译");
             if (executeMassage.getCode() != 0) {
-                throw new RuntimeException("编译错误");
+                executeMassage.setErrorMessage(executeMassage.getErrorMessage());
+                executeMassage.setCode(ExecuteStatusEnum.COMPILE_ERROR.getCode());
             }
             return executeMassage;
         } catch (IOException e) {
@@ -104,11 +113,11 @@ public class JavaCodeSandboxTemplate implements CodeSandbox {
         for (String inputArgs : inputList) {
             // 运行时需要限制内存
             String runCmd = String.format("java -Xmx256m -Dfile.encoding=UTF-8 -cp %s Main %s", userCodeFile.getParentFile().getAbsoluteFile(), inputArgs);
+            System.out.println(runCmd);
             try {
                 Process process = Runtime.getRuntime().exec(runCmd);
-                ExecuteMassage executeMassage = ProcessUtils.runProcessAndGetMessage(process, "运行");
-                //ExecuteMassage executeMassage = ProcessUtils.runInteractProcessAndGetMessage(process, "运行", inputArgs);
-                System.out.println(executeMassage);
+                //ExecuteMassage executeMassage = ProcessUtils.runProcessAndGetMessage(process, "运行");
+                ExecuteMassage executeMassage = ProcessUtils.runInteractProcessAndGetMessage(process, "运行", inputArgs);
                 executeMassagesList.add(executeMassage);
             } catch (Exception e) {
                 throw new RuntimeException("程序执行异常:", e);
@@ -124,21 +133,28 @@ public class JavaCodeSandboxTemplate implements CodeSandbox {
      */
     public ExecuteCodeResponse getExecuteCodeResponse(List<ExecuteMassage> executeMassagesList) {
         ExecuteCodeResponse executeCodeResponse = new ExecuteCodeResponse();
-        executeCodeResponse.setJudgeStatus(1);
+        executeCodeResponse.setExecuteStatus(ExecuteStatusEnum.SUCCESS.getCode());
         List<String> outputList = new ArrayList<>();
         long maxTime = 0;
-        long maxMemory = 0L;
+        long maxMemory = 0;
         for (ExecuteMassage executeMassage : executeMassagesList) {
             // 操作outputList
             if (executeMassage.getCode() == 0) {
+                // 运行正常
                 //outputList = executeMassagesList.stream().map(ExecuteMassage::getMessage).collect(Collectors.toList());
                 outputList.add(executeMassage.getMessage());
+        } else if (executeMassage.getCode() == 1) {
+                // 编译错误
+                outputList.add(executeMassage.getErrorMessage());
+                executeCodeResponse.setExecuteStatus(ExecuteStatusEnum.COMPILE_ERROR.getCode());
+                executeCodeResponse.setMessage(executeMassage.getErrorMessage());
+                executeCodeResponse.setJudgeInfo(new JudgeInfo());
+                return executeCodeResponse;
             } else {
+                // 运行错误
                 //outputList = executeMassagesList.stream().map(ExecuteMassage::getErrorMessage).collect(Collectors.toList());
                 outputList.add(executeMassage.getErrorMessage());
-                // TODO 创建枚举值
-                executeCodeResponse.setJudgeStatus(3);
-                // TODO 优化
+                executeCodeResponse.setExecuteStatus(ExecuteStatusEnum.RUN_ERROR.getCode());
                 executeCodeResponse.setMessage(executeMassage.getErrorMessage());
             }
 
@@ -184,7 +200,7 @@ public class JavaCodeSandboxTemplate implements CodeSandbox {
         executeCodeResponse.setOutputList(new ArrayList<>());
         executeCodeResponse.setMessage(e.getMessage());
         // TODO 枚举
-        executeCodeResponse.setJudgeStatus(2);
+        executeCodeResponse.setExecuteStatus(2);
         executeCodeResponse.setJudgeInfo(new JudgeInfo());
         return executeCodeResponse;
     }

@@ -1,5 +1,6 @@
 package com.tong.flyojcodesandbox.utils;
 
+import cn.hutool.core.util.StrUtil;
 import com.tong.flyojcodesandbox.model.ExecuteMassage;
 import org.springframework.util.StopWatch;
 
@@ -49,7 +50,7 @@ public class ProcessUtils {
                     errorStringBuilder.append(errorOutputLine);
                 }
                 System.out.println(errorStringBuilder);
-                executeMassage.setErrorMessage(errorBufferedReader.toString());
+                executeMassage.setErrorMessage(errorStringBuilder.toString());
             }
 
             stopWatch.stop();
@@ -81,7 +82,9 @@ public class ProcessUtils {
 
             // 往输出流写入数据
             OutputStreamWriter outputStreamWriter = new OutputStreamWriter(outputStream);
-            outputStreamWriter.write(args);
+            String[] s = args.split(" ");
+            outputStreamWriter.write(StrUtil.join("\n",s) + "\n");
+            //outputStreamWriter.write("1\n2\n");
             outputStreamWriter.flush();// 刷新，相当于回车
 
             // 获取进程的正常输出
@@ -115,9 +118,10 @@ public class ProcessUtils {
                     errorStringBuilder.append(errorOutputLine);
                 }
                 System.out.println(errorStringBuilder);
-                executeMassage.setErrorMessage(errorBufferedReader.toString());
+                executeMassage.setErrorMessage(errorStringBuilder.toString());
                 errorStream.close();
             }
+            outputStreamWriter.close();
             inputStream.close();
             outputStream.close();
             process.destroy();

@@ -21,8 +21,9 @@ public class JavaNativeCodeSandbox extends JavaCodeSandboxTemplate {
     public static void main(String[] args) {
         JavaNativeCodeSandbox javaNativeCodeSandbox = new JavaNativeCodeSandbox();
         ExecuteCodeRequest executeCodeRequest = new ExecuteCodeRequest();
-        executeCodeRequest.setInputList(Arrays.asList("1 2", "1 3"));
-        String code = ResourceUtil.readUtf8Str("testCode" + File.separator + "simpleComputeArgs" + File.separator + "Main.java");
+        executeCodeRequest.setInputList(Arrays.asList("1 2","1 3"));
+        //String code = ResourceUtil.readUtf8Str("testCode" + File.separator + "simpleComputeArgs" + File.separator + "Main.java");
+        String code = ResourceUtil.readUtf8Str("testCode" + File.separator + "simpleCompute" + File.separator + "Main.java");
         executeCodeRequest.setCode(code);
         executeCodeRequest.setLanguage("java");
         ExecuteCodeResponse executeCodeResponse = javaNativeCodeSandbox.executeCode(executeCodeRequest);

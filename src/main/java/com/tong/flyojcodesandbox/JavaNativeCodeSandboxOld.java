@@ -82,7 +82,7 @@ public class JavaNativeCodeSandboxOld implements CodeSandbox {
 
         // 4. 收集并整理返回信息
         ExecuteCodeResponse executeCodeResponse = new ExecuteCodeResponse();
-        executeCodeResponse.setJudgeStatus(1);
+        executeCodeResponse.setExecuteStatus(1);
         List<String> outputList = new ArrayList<>();
         long maxTime = 0;
         for (ExecuteMassage executeMassage : executeMassagesList) {
@@ -94,7 +94,7 @@ public class JavaNativeCodeSandboxOld implements CodeSandbox {
                 //outputList = executeMassagesList.stream().map(ExecuteMassage::getErrorMessage).collect(Collectors.toList());
                 outputList.add(executeMassage.getErrorMessage());
                 // TODO 创建枚举值
-                executeCodeResponse.setJudgeStatus(3);
+                executeCodeResponse.setExecuteStatus(3);
                 // TODO 优化
                 executeCodeResponse.setMessage(executeMassage.getErrorMessage());
             }
@@ -130,7 +130,7 @@ public class JavaNativeCodeSandboxOld implements CodeSandbox {
         executeCodeResponse.setOutputList(new ArrayList<>());
         executeCodeResponse.setMessage(e.getMessage());
         // TODO 枚举
-        executeCodeResponse.setJudgeStatus(2);
+        executeCodeResponse.setExecuteStatus(2);
         executeCodeResponse.setJudgeInfo(new JudgeInfo());
         return executeCodeResponse;
     }
